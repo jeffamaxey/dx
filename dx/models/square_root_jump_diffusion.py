@@ -170,9 +170,7 @@ class square_root_jump_diffusion_plus(square_root_jump_diffusion):
         f_model = srd_forwards(self.initial_value, p0,
                                self.term_structure[:, 0])
 
-        MSE = np.sum((self.term_structure[:, 1] -
-                      f_model) ** 2) / len(f_model)
-        return MSE
+        return np.sum((self.term_structure[:, 1] - f_model) ** 2) / len(f_model)
 
     def generate_shift_base(self, p0):
         # calibration

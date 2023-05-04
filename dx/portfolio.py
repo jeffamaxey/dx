@@ -206,10 +206,7 @@ class mean_variance_portfolio(object):
         Returns a dictionary with entries symbol:weights
         '''
 
-        d = dict()
-        for i in range(len(self.symbols)):
-            d[self.symbols[i]] = self.weights[i]
-        return d
+        return {self.symbols[i]: self.weights[i] for i in range(len(self.symbols))}
 
     def get_portfolio_return(self):
         '''
@@ -328,8 +325,8 @@ class mean_variance_portfolio(object):
         delta = (max_return - min_return) / (n - 1)
         if delta > 0:
             returns = np.arange(min_return, max_return + delta, delta)
-            vols = list()
-            rets = list()
+            vols = []
+            rets = []
             for r in returns:
                 w = self.get_optimal_weights('Vol', constraint=r,
                                              constraint_type='Exact')
@@ -357,7 +354,7 @@ class mean_variance_portfolio(object):
 
             cons = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1}, ]
             if constraint is not None:
-                d = dict()
+                d = {}
                 if constraint_type == 'Exact':
                     d['type'] = 'eq'
                     d['fun'] = lambda x: self.test_weights(x)[0] - constraint
@@ -368,7 +365,7 @@ class mean_variance_portfolio(object):
                     cons.append(d)
                 else:
                     msg = 'Value for constraint_type must be either '
-                    msg += 'Exact or Bound, not %s' % constraint_type
+                    msg += f'Exact or Bound, not {constraint_type}'
                     raise ValueError(msg)
 
         elif target == 'Return':
@@ -377,7 +374,7 @@ class mean_variance_portfolio(object):
 
             cons = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1}, ]
             if constraint is not None:
-                d = dict()
+                d = {}
                 if constraint_type == 'Exact':
                     d['type'] = 'eq'
                     d['fun'] = lambda x: self.test_weights(x)[1] - constraint
@@ -388,18 +385,18 @@ class mean_variance_portfolio(object):
                     cons.append(d)
                 else:
                     msg = 'Value for constraint_type must be either '
-                    msg += 'Exact or Bound, not %s' % constraint_type
+                    msg += f'Exact or Bound, not {constraint_type}'
                     raise ValueError(msg)
 
         else:
-            raise ValueError('Unknown target %s' % target)
+            raise ValueError(f'Unknown target {target}')
 
         bounds = tuple((0, 1) for x in range(self.number_of_assets))
         start = self.number_of_assets * [1. / self.number_of_assets, ]
         result = sco.minimize(optimize_function, start,
                               method='SLSQP', bounds=bounds, constraints=cons)
 
-        if bool(result['success']) is True:
+        if bool(result['success']):
             new_weights = result['x'].round(6)
             return new_weights
         else:
@@ -410,11 +407,8 @@ class mean_variance_portfolio(object):
             return (0, 0)
         for x in np.arange(l, r + d, d):
             if f(l) * f(x) < 0:
-                ret = (x - d, x)
-                return ret
-
-        ret = self.search_sign_changing(l, r, f, d / 2.)
-        return ret
+                return x - d, x
+        return self.search_sign_changing(l, r, f, d / 2.)
 
 
 if __name__ == '__main__':

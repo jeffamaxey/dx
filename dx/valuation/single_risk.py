@@ -153,8 +153,7 @@ class valuation_class_single(object):
 
     def vega(self, interval=0.01, accuracy=4):
         ''' Returns the vega for the derivative. '''
-        if interval < self.underlying.volatility / 50.:
-            interval = self.underlying.volatility / 50.
+        interval = max(interval, self.underlying.volatility / 50.)
         # forward-difference approximation
         # calculate the left value for numerical vega
         value_left = self.present_value(fixed_seed=True, accuracy=10)
@@ -259,8 +258,7 @@ class valuation_mcs_european_single(valuation_class_single):
         # minimum value over whole path
         min_value = np.amin(paths[:time_index], axis=0)
         try:
-            payoff = eval(self.payoff_func)
-            return payoff
+            return eval(self.payoff_func)
         except:
             print('Error evaluating payoff function.')
 
@@ -335,9 +333,9 @@ class valuation_mcs_american_single(valuation_class_single):
             number of basis functions for regression
         '''
         instrument_values, inner_values, time_index_start, time_index_end = \
-            self.generate_payoff(fixed_seed=fixed_seed)
+                self.generate_payoff(fixed_seed=fixed_seed)
         time_list = \
-            self.underlying.time_grid[time_index_start:time_index_end + 1]
+                self.underlying.time_grid[time_index_start:time_index_end + 1]
 
         discount_factors = self.discount_curve.get_discount_factors(
             time_list, self.paths, dtobjects=True)[1]
@@ -356,7 +354,4 @@ class valuation_mcs_american_single(valuation_class_single):
             V = np.where(inner_values[t] > C, inner_values[t], V * df)
         df = discount_factors[0] / discount_factors[1]
         result = np.sum(df * V) / len(V)
-        if full:
-            return round(result, accuracy), df * V
-        else:
-            return round(result, accuracy)
+        return (round(result, accuracy), df * V) if full else round(result, accuracy)

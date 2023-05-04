@@ -87,9 +87,7 @@ def B96_call_value(mar_env):
                      B96_int_func(u, S0, K, T, r, kappa_v, theta_v,
                                   sigma_v, rho, v0, lamb, mu, delta),
                      0, np.inf, limit=250)[0]
-    call_value = max(0, S0 - np.exp(-r * T) * np.sqrt(S0 * K) /
-                     np.pi * int_value)
-    return call_value
+    return max(0, S0 - np.exp(-r * T) * np.sqrt(S0 * K) / np.pi * int_value)
 
 
 def B96_put_value(mar_env):
@@ -106,8 +104,7 @@ def B96_put_value(mar_env):
         print('Error parsing market environment.')
 
     call_value = B96_call_value(mar_env)
-    put_value = call_value + K * math.exp(-r * T) - S0
-    return put_value
+    return call_value + K * math.exp(-r * T) - S0
 
 
 def B96_int_func(u, S0, K, T, r, kappa_v, theta_v, sigma_v, rho, v0,
@@ -118,9 +115,11 @@ def B96_int_func(u, S0, K, T, r, kappa_v, theta_v, sigma_v, rho, v0,
     Parameter definitions see function B96_call_value.'''
     char_func_value = B96_char_func(u - 1j * 0.5, T, r, kappa_v, theta_v,
                                     sigma_v, rho, v0, lamb, mu, delta)
-    int_func_value = 1 / (u ** 2 + 0.25) \
+    return (
+        1
+        / (u**2 + 0.25)
         * (np.exp(1j * u * np.log(S0 / K)) * char_func_value).real
-    return int_func_value
+    )
 
 
 def M76_char_func(u, T, lamb, mu, delta):
@@ -129,9 +128,13 @@ def M76_char_func(u, T, lamb, mu, delta):
 
     Parameter definitions see function M76_call_value.'''
     omega = -lamb * (np.exp(mu + 0.5 * delta ** 2) - 1)
-    char_func_value = np.exp((1j * u * omega + lamb *
-        (np.exp(1j * u * mu - u ** 2 * delta ** 2 * 0.5) - 1)) * T)
-    return char_func_value
+    return np.exp(
+        (
+            1j * u * omega
+            + lamb * (np.exp(1j * u * mu - u**2 * delta**2 * 0.5) - 1)
+        )
+        * T
+    )
 
 
 def B96_char_func(u, T, r, kappa_v, theta_v, sigma_v, rho, v0,

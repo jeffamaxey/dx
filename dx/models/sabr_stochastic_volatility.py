@@ -116,16 +116,26 @@ class sabr_stochastic_volatility(simulation_class):
                         (2. - 3. * self.rho ** 2) /
                         24. * self.vol_vol ** 2)
 
-            sigma = sigma_1 * (1. + sigma_ex * expiry)
+            return sigma_1 * (1. + sigma_ex * expiry)
         else:
             f_beta = self.initial_value ** one_beta
             f_two_beta = self.initial_value ** (2. - 2 * self.beta)
-            sigma = ((self.alpha / f_beta) *
-                     (1 + expiry * ((one_beta_square / 24. * self.alpha ** 2 /
-                      f_two_beta) + (0.25 * self.rho * self.beta *
-                      self.vol_vol * self.alpha / f_beta) +
-                      ((2. - 3 * self.rho ** 2) / 24. * self.vol_vol ** 2))))
-        return sigma
+            return (self.alpha / f_beta) * (
+                1
+                + expiry
+                * (
+                    (one_beta_square / 24.0 * self.alpha**2 / f_two_beta)
+                    + (
+                        0.25
+                        * self.rho
+                        * self.beta
+                        * self.vol_vol
+                        * self.alpha
+                        / f_beta
+                    )
+                    + ((2.0 - 3 * self.rho**2) / 24.0 * self.vol_vol**2)
+                )
+            )
 
     def calibrate_to_impl_vol(self, implied_vols, maturity, para=list()):
         ''' Calibrates the parameters alpha, beta, initial_value and vol_vol
@@ -158,7 +168,7 @@ class sabr_stochastic_volatility(simulation_class):
             except:
                 val = None
             if val is None:
-                raise ValueError('Models %s is unset!' % p)
+                raise ValueError(f'Models {p} is unset!')
 
     def generate_paths(self, fixed_seed=True, day_count=365.):
         ''' Generates Monte Carlo Paths using Euler discretization.
@@ -197,11 +207,7 @@ class sabr_stochastic_volatility(simulation_class):
 
             F_b = np.abs(paths[t - 1]) ** self.beta
             p = paths[t - 1] + va_[t] * F_b * square_root_dt * rat[0]
-            if (self.beta > 0 and self.beta < 1):
-                paths[t] = np.maximum(0, p)
-            else:
-                paths[t] = p
-
+            paths[t] = np.maximum(0, p) if (self.beta > 0 and self.beta < 1) else p
         self.instrument_values = paths
         self.volatility_values = np.sqrt(va)
 

@@ -90,10 +90,7 @@ def sn_random_numbers(shape, antithetic=True, moment_matching=True,
     if moment_matching is True:
         ran = ran - np.mean(ran)
         ran = ran / np.std(ran)
-    if shape[0] == 1:
-        return ran[0]
-    else:
-        return ran
+    return ran[0] if shape[0] == 1 else ran
 
 # Discounting classes
 
@@ -171,15 +168,9 @@ class deterministic_short_rate(object):
         ''' time_list either list of datetime objects or list of
         year deltas as decimal number (dtobjects=False)
         '''
-        if dtobjects is True:
-            tlist = get_year_deltas(time_list)
-        else:
-            tlist = time_list
+        tlist = get_year_deltas(time_list) if dtobjects is True else time_list
         dlist = get_year_deltas(self.yield_list[:, 0])
-        if len(time_list) <= 3:
-            k = 1
-        else:
-            k = 3
+        k = 1 if len(time_list) <= 3 else 3
         yield_spline = sci.splrep(dlist, self.yield_list[:, 1], k=k)
         yield_curve = sci.splev(tlist, yield_spline, der=0)
         yield_deriv = sci.splev(tlist, yield_spline, der=1)
@@ -187,19 +178,13 @@ class deterministic_short_rate(object):
 
     def get_forward_rates(self, time_list, paths=None, dtobjects=True):
         yield_curve = self.get_interpolated_yields(time_list, dtobjects)
-        if dtobjects is True:
-            tlist = get_year_deltas(time_list)
-        else:
-            tlist = time_list
+        tlist = get_year_deltas(time_list) if dtobjects is True else time_list
         forward_rates = yield_curve[:, 1] + yield_curve[:, 2] * tlist
         return time_list, forward_rates
 
     def get_discount_factors(self, time_list, paths=None, dtobjects=True):
         discount_factors = []
-        if dtobjects is True:
-            dlist = get_year_deltas(time_list)
-        else:
-            dlist = time_list
+        dlist = get_year_deltas(time_list) if dtobjects is True else time_list
         time_list, forward_rate = self.get_forward_rates(time_list, dtobjects)
         for no in range(len(dlist)):
             factor = 0.0

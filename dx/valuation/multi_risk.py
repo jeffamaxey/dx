@@ -76,10 +76,7 @@ class valuation_class_multi(object):
             self.discount_curve = self.val_env.get_curve('discount_curve')
             self.risk_factors = risk_factors
             self.underlyings = set()
-            if portfolio is False:
-                self.underlying_objects = {}
-            else:
-                self.underlying_objects = risk_factors
+            self.underlying_objects = {} if portfolio is False else risk_factors
             self.correlations = correlations
             self.payoff_func = payoff_func
             self.fixed_seed = fixed_seed
@@ -117,11 +114,7 @@ class valuation_class_multi(object):
                     cholesky_matrix = np.linalg.cholesky(np.array(
                         self.correlations))
 
-                # dictionary with index positions
-                rn_set = {}
-                for asset in self.risk_factors:
-                    rn_set[asset] = ul_list.index(asset)
-
+                rn_set = {asset: ul_list.index(asset) for asset in self.risk_factors}
                 # random numbers array
                 random_numbers = sn_random_numbers(
                     (len(rn_set), len(self.time_grid),
@@ -250,8 +243,7 @@ class valuation_class_multi(object):
         if len(self.instrument_values) == 0:
             self.get_instrument_values()
         asset = self.underlying_objects[key]
-        if interval < asset.volatility / 50.:
-            interval = asset.volatility / 50.
+        interval = max(interval, asset.volatility / 50.)
         value_left = self.present_value(fixed_seed=True, accuracy=10)
         start_vola = asset.volatility
         vola_del = start_vola + interval
@@ -345,8 +337,7 @@ class valuation_mcs_european_multi(valuation_class_multi):
             max_value[key] = np.amax(paths[key][:time_index], axis=1)
             min_value[key] = np.amin(paths[key][:time_index], axis=1)
         try:
-            payoff = eval(self.payoff_func)
-            return payoff
+            return eval(self.payoff_func)
         except:
             print('Error evaluating payoff function.')
 
@@ -385,11 +376,10 @@ class valuation_mcs_american_multi(valuation_class_multi):
             time_index_end = int(np.where(self.time_grid == self.maturity)[0])
         except:
             print('Pricing or maturity date not in time grid of underlying.')
-        instrument_values = {}
-        for key, obj in self.instrument_values.items():
-            instrument_values[key] = \
-                self.instrument_values[key][
-                    time_index_start:time_index_end + 1]
+        instrument_values = {
+            key: self.instrument_values[key][time_index_start : time_index_end + 1]
+            for key in self.instrument_values
+        }
         try:
             payoff = eval(self.payoff_func)
             return instrument_values, payoff, time_index_start, time_index_end
@@ -398,7 +388,7 @@ class valuation_mcs_american_multi(valuation_class_multi):
 
     def present_value(self, accuracy=3, fixed_seed=True, full=False):
         instrument_values, inner_values, time_index_start, time_index_end = \
-            self.generate_payoff(fixed_seed=fixed_seed)
+                self.generate_payoff(fixed_seed=fixed_seed)
         time_list = self.time_grid[time_index_start:time_index_end + 1]
 
         discount_factors = self.discount_curve.get_discount_factors(
@@ -412,7 +402,7 @@ class valuation_mcs_american_multi(valuation_class_multi):
                 matrix[asset_1] = instrument_values[asset_1][t]
                 for asset_2 in instrument_values.keys():
                     matrix[asset_1 + asset_2] = instrument_values[asset_1][t] \
-                        * instrument_values[asset_2][t]
+                            * instrument_values[asset_2][t]
             # rg = sm.OLS(V * df, np.array(list(matrix.values())).T).fit()
             rg = np.linalg.lstsq(np.array(list(matrix.values())).T, V * df)[0]
             # C = np.sum(rg.params * np.array(list(matrix.values())).T, axis=1)
@@ -420,7 +410,4 @@ class valuation_mcs_american_multi(valuation_class_multi):
             V = np.where(inner_values[t] > C, inner_values[t], V * df)
         df = discount_factors[0] / discount_factors[1]
         result = np.sum(df * V) / len(V)
-        if full:
-            return round(result, accuracy), df * V
-        else:
-            return round(result, accuracy)
+        return (round(result, accuracy), df * V) if full else round(result, accuracy)

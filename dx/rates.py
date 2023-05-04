@@ -161,5 +161,4 @@ def CIR_zcb_valuation(r0, kappa_r, theta_r, sigma_r, T):
     '''
     b_1 = b1(kappa_r, theta_r, sigma_r, T)
     b_2 = b2(kappa_r, theta_r, sigma_r, T)
-    zcb_value = b_1 * math.exp(-b_2 * r0)
-    return zcb_value
+    return b_1 * math.exp(-b_2 * r0)
