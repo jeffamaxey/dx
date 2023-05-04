@@ -151,10 +151,7 @@ class stochastic_short_rate(object):
 
     def get_discount_factors(self, time_list, paths, dtobjects=True):
         discount_factors = []
-        if dtobjects is True:
-            dlist = get_year_deltas(time_list)
-        else:
-            dlist = time_list
+        dlist = get_year_deltas(time_list) if dtobjects is True else time_list
         forward_rate = self.get_forward_rates(time_list, paths, dtobjects)[1]
         for no in range(len(dlist)):
             factor = np.zeros_like(forward_rate[0, :])
@@ -195,5 +192,4 @@ def srd_forwards(initial_value, kts, time_grid):
             (2 * g + (kappa + g) * (np.exp(g * t) - 1)))
     sum2 = initial_value * ((4 * g ** 2 * np.exp(g * t)) /
                             (2 * g + (kappa + g) * (np.exp(g * t) - 1)) ** 2)
-    forwards = sum1 + sum2
-    return forwards
+    return sum1 + sum2

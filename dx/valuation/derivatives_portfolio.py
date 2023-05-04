@@ -147,11 +147,11 @@ class derivatives_portfolio(object):
         for pos in self.positions:
             # determine earliest starting_date
             self.val_env.constants['starting_date'] = \
-                min(self.val_env.constants['starting_date'],
+                    min(self.val_env.constants['starting_date'],
                     positions[pos].mar_env.pricing_date)
             # determine latest date of relevance
             self.val_env.constants['final_date'] = \
-                max(self.val_env.constants['final_date'],
+                    max(self.val_env.constants['final_date'],
                     positions[pos].mar_env.constants['maturity'])
             # collect all underlyings
             # add to set; avoids redundancy
@@ -188,35 +188,28 @@ class derivatives_portfolio(object):
         correlation_matrix = pd.DataFrame(correlation_matrix,
                                           index=ul_list, columns=ul_list)
 
-        if self.correlations is not None:
-            if isinstance(self.correlations, list):
-                # if correlations are given as list of list/tuple objects
-                for corr in self.correlations:
-                    if corr[2] >= 1.0:
-                        corr[2] = 0.999999999999
-                    if corr[2] <= -1.0:
-                        corr[2] = -0.999999999999
-                    # fill correlation matrix
-                    correlation_matrix[corr[0]].loc[corr[1]] = corr[2]
-                    correlation_matrix[corr[1]].loc[corr[0]] = corr[2]
-                # determine Cholesky matrix
-                cholesky_matrix = np.linalg.cholesky(np.array(
-                    correlation_matrix))
-            else:
-                # if correlation matrix was already given as pd.DataFrame
-                cholesky_matrix = np.linalg.cholesky(np.array(
-                    self.correlations))
-        else:
+        if self.correlations is None:
             cholesky_matrix = np.linalg.cholesky(np.array(
                 correlation_matrix))
 
-        # dictionary with index positions for the
-        # slice of the random number array to be used by
-        # respective underlying
-        rn_set = {}
-        for asset in self.underlyings:
-            rn_set[asset] = ul_list.index(asset)
-
+        elif isinstance(self.correlations, list):
+            # if correlations are given as list of list/tuple objects
+            for corr in self.correlations:
+                if corr[2] >= 1.0:
+                    corr[2] = 0.999999999999
+                if corr[2] <= -1.0:
+                    corr[2] = -0.999999999999
+                # fill correlation matrix
+                correlation_matrix[corr[0]].loc[corr[1]] = corr[2]
+                correlation_matrix[corr[1]].loc[corr[0]] = corr[2]
+            # determine Cholesky matrix
+            cholesky_matrix = np.linalg.cholesky(np.array(
+                correlation_matrix))
+        else:
+            # if correlation matrix was already given as pd.DataFrame
+            cholesky_matrix = np.linalg.cholesky(np.array(
+                self.correlations))
+        rn_set = {asset: ul_list.index(asset) for asset in self.underlyings}
         # random numbers array, to be used by
         # all underlyings (if correlations exist)
         random_numbers = sn_random_numbers(
@@ -240,10 +233,7 @@ class derivatives_portfolio(object):
             # select the right simulation class
             model = models[mar_env.constants['model']]
             # instantiate simulation object
-            if self.correlations is not None:
-                corr = True
-            else:
-                corr = False
+            corr = self.correlations is not None
             self.underlying_objects[asset] = model(asset, mar_env,
                                                    corr=corr)
 
@@ -255,18 +245,19 @@ class derivatives_portfolio(object):
             mar_env.add_environment(self.val_env)
             # instantiate valuation class single risk vs. multi risk
             if self.positions[pos].otype[-5:] == 'multi':
-                underlying_objects = {}
-                for obj in positions[pos].underlyings:
-                    underlying_objects[obj] = self.underlying_objects[obj]
+                underlying_objects = {
+                    obj: self.underlying_objects[obj]
+                    for obj in positions[pos].underlyings
+                }
                 self.valuation_objects[pos] = \
-                    val_class(name=positions[pos].name,
+                        val_class(name=positions[pos].name,
                               val_env=mar_env,
                               risk_factors=underlying_objects,
                               payoff_func=positions[pos].payoff_func,
                               portfolio=True)
             else:
                 self.valuation_objects[pos] = \
-                    val_class(name=positions[pos].name,
+                        val_class(name=positions[pos].name,
                               mar_env=mar_env,
                               underlying=self.underlying_objects[
                         positions[pos].underlyings[0]],
@@ -286,25 +277,24 @@ class derivatives_portfolio(object):
         res_list = []
         if self.parallel is True:
             self.underlying_objects = \
-                simulate_parallel(self.underlying_objects.values())
+                    simulate_parallel(self.underlying_objects.values())
             results = value_parallel(self.valuation_objects.values())
         # iterate over all positions in portfolio
         for pos in self.valuation_objects:
-            pos_list = []
             if self.parallel is True:
                 present_value = results[self.valuation_objects[pos].name]
             else:
                 present_value = self.valuation_objects[pos].present_value()
-            pos_list.append(pos)
-            pos_list.append(self.positions[pos].name)
-            pos_list.append(self.positions[pos].quantity)
-            pos_list.append(self.positions[pos].otype)
-            pos_list.append(self.positions[pos].underlyings)
-            # calculate all present values for the single instruments
-            pos_list.append(present_value)
-            pos_list.append(self.valuation_objects[pos].currency)
-            # single instrument value times quantity
-            pos_list.append(present_value * self.positions[pos].quantity)
+            pos_list = [
+                pos,
+                self.positions[pos].name,
+                self.positions[pos].quantity,
+                self.positions[pos].otype,
+                self.positions[pos].underlyings,
+                present_value,
+                self.valuation_objects[pos].currency,
+                present_value * self.positions[pos].quantity,
+            ]
             res_list.append(pos_list)
         res_df = pd.DataFrame(res_list,
                               columns=['position', 'name', 'quantity',

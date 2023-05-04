@@ -83,40 +83,41 @@ class BSM_european_option(object):
 
     def d1(self):
         ''' Helper function. '''
-        d1 = ((log(self.initial_value / self.strike) +
-               (self.short_rate - self.dividend_yield +
-                0.5 * self.volatility ** 2) * self.ttm) /
-              (self.volatility * sqrt(self.ttm)))
-        return d1
+        return (
+            log(self.initial_value / self.strike)
+            + (self.short_rate - self.dividend_yield + 0.5 * self.volatility**2)
+            * self.ttm
+        ) / (self.volatility * sqrt(self.ttm))
 
     def d2(self):
         ''' Helper function. '''
-        d2 = ((log(self.initial_value / self.strike) +
-               (self.short_rate - self.dividend_yield -
-                0.5 * self.volatility ** 2) * self.ttm) /
-              (self.volatility * sqrt(self.ttm)))
-        return d2
+        return (
+            log(self.initial_value / self.strike)
+            + (self.short_rate - self.dividend_yield - 0.5 * self.volatility**2)
+            * self.ttm
+        ) / (self.volatility * sqrt(self.ttm))
 
     def call_value(self):
         ''' Return call option value. '''
         self.update_ttm()
-        call_value = (
-            exp(- self.dividend_yield * self.ttm) *
-            self.initial_value * stats.norm.cdf(self.d1(), 0.0, 1.0) -
-            exp(-self.short_rate * self.ttm) * self.strike *
-            stats.norm.cdf(self.d2(), 0.0, 1.0))
-        return call_value
+        return exp(
+            -self.dividend_yield * self.ttm
+        ) * self.initial_value * stats.norm.cdf(self.d1(), 0.0, 1.0) - exp(
+            -self.short_rate * self.ttm
+        ) * self.strike * stats.norm.cdf(
+            self.d2(), 0.0, 1.0
+        )
 
     def put_value(self):
         ''' Return put option value. '''
         self.update_ttm()
-        put_value = (
-            exp(-self.short_rate * self.ttm) * self.strike *
-            stats.norm.cdf(-self.d2(), 0.0, 1.0) -
-            exp(-self.dividend_yield * self.ttm) *
-            self.initial_value *
-            stats.norm.cdf(-self.d1(), 0.0, 1.0))
-        return put_value
+        return exp(-self.short_rate * self.ttm) * self.strike * stats.norm.cdf(
+            -self.d2(), 0.0, 1.0
+        ) - exp(
+            -self.dividend_yield * self.ttm
+        ) * self.initial_value * stats.norm.cdf(
+            -self.d1(), 0.0, 1.0
+        )
 
     def vega(self):
         ''' Return Vega of option. '''
@@ -124,9 +125,7 @@ class BSM_european_option(object):
         d1 = ((log(self.initial_value / self.strike) +
                (self.short_rate + (0.5 * self.volatility ** 2)) * self.ttm) /
               (self.volatility * sqrt(self.ttm)))
-        vega = self.initial_value * stats.norm.pdf(d1, 0.0, 1.0) \
-            * sqrt(self.ttm)
-        return vega
+        return self.initial_value * stats.norm.pdf(d1, 0.0, 1.0) * sqrt(self.ttm)
 
     def imp_vol(self, price, otype='call', volatility_est=0.2):
         ''' Return implied volatility given option price. '''

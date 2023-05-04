@@ -160,12 +160,12 @@ def plot_calibration_results(cali, relative=False):
     fig, axarr = plt.subplots(len(mats), 2, sharex=True)
     fig.set_size_inches(8, 12)
     fig.subplots_adjust(wspace=0.2, hspace=0.2)
-    z = 0
-    for T in mats:
+    wi = 2.
+    for z, T in enumerate(mats):
         strikes = strikes = cali.option_data[cali.option_data[:, 0] == T][:, 1]
         market = cali.option_data[cali.option_data[:, 0] == T][:, 2]
         model = cali.model_values[cali.model_values[:, 0] == T][:, 2]
-        axarr[z, 0].set_ylabel('%s' % str(T)[:10])
+        axarr[z, 0].set_ylabel(f'{str(T)[:10]}')
         axarr[z, 0].plot(strikes, market, label='Market Quotes')
         axarr[z, 0].plot(strikes, model, 'ro', label='Model Prices')
         axarr[z, 0].grid()
@@ -173,7 +173,6 @@ def plot_calibration_results(cali, relative=False):
             axarr[z, 0].set_title('Option Quotes')
         if T is mats[-1]:
             axarr[z, 0].set_xlabel('Strike')
-        wi = 2.
         if relative is True:
             axarr[z, 1].bar(strikes - wi / 2,
                            (model - market) / market * 100, width=wi)
@@ -184,4 +183,3 @@ def plot_calibration_results(cali, relative=False):
             axarr[z, 1].set_title('Differences')
         if T is mats[-1]:
             axarr[z, 1].set_xlabel('Strike')
-        z += 1

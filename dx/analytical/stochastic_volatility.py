@@ -77,9 +77,7 @@ def H93_call_value(mar_env):
                      H93_int_func(u, S0, K, T, r, kappa_v,
                                   theta_v, sigma_v, rho, v0),
                      0, np.inf, limit=250)[0]
-    call_value = max(0, S0 - np.exp(-r * T) * np.sqrt(S0 * K) /
-                     np.pi * int_value)
-    return call_value
+    return max(0, S0 - np.exp(-r * T) * np.sqrt(S0 * K) / np.pi * int_value)
 
 
 def H93_put_value(mar_env):
@@ -96,8 +94,7 @@ def H93_put_value(mar_env):
         print('Error parsing market environment.')
 
     call_value = H93_call_value(mar_env)
-    put_value = call_value + K * math.exp(-r * T) - S0
-    return put_value
+    return call_value + K * math.exp(-r * T) - S0
 
 
 def H93_int_func(u, S0, K, T, r, kappa_v, theta_v, sigma_v, rho, v0):
@@ -107,9 +104,11 @@ def H93_int_func(u, S0, K, T, r, kappa_v, theta_v, sigma_v, rho, v0):
     Parameter definitions see function H93_call_value.'''
     char_func_value = H93_char_func(u - 1j * 0.5, T, r, kappa_v,
                                     theta_v, sigma_v, rho, v0)
-    int_func_value = 1 / (u ** 2 + 0.25) \
+    return (
+        1
+        / (u**2 + 0.25)
         * (np.exp(1j * u * np.log(S0 / K)) * char_func_value).real
-    return int_func_value
+    )
 
 
 def H93_char_func(u, T, r, kappa_v, theta_v, sigma_v, rho, v0):
@@ -127,5 +126,4 @@ def H93_char_func(u, T, r, kappa_v, theta_v, sigma_v, rho, v0):
           2 * np.log((1 - c3 * np.exp(c2 * T)) / (1 - c3))))
     H2 = ((kappa_v - rho * sigma_v * u * 1j + c2) / sigma_v ** 2 *
           ((1 - np.exp(c2 * T)) / (1 - c3 * np.exp(c2 * T))))
-    char_func_value = np.exp(H1 + H2 * v0)
-    return char_func_value
+    return np.exp(H1 + H2 * v0)
